@@ -1,0 +1,42 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+jobs:
+  build:
+    runs-on: macos-15
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Select Xcode 16.3
+        run: sudo xcode-select -s /Applications/Xcode_16.3.app
+
+      - name: Build
+        run: |
+          xcodebuild build \
+            -project MiniNoteNext.xcodeproj \
+            -scheme MiniNoteNext \
+            -configuration Release \
+            -derivedDataPath build/DerivedData \
+            CODE_SIGN_IDENTITY="-" \
+            CODE_SIGNING_REQUIRED=YES \
+            CODE_SIGNING_ALLOWED=YES \
+            OTHER_CODE_SIGN_FLAGS="--deep"
+
+      - name: Package
+        run: |
+          ditto -c -k --keepParent \
+            "build/DerivedData/Build/Products/Release/MiniNoteNext.app" \
+            MiniNoteNext.zip
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: MiniNoteNext.zip
